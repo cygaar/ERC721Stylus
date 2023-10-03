@@ -155,7 +155,7 @@ impl<T: ERC721Params> ERC721<T> {
         if to.has_code() {
             let receiver = IERC721TokenReceiver::new(to);
             let received = receiver
-                .on_erc_721_received(&mut *storage, msg::sender(), from, token_id, data)?
+                .on_erc_721_received(storage, msg::sender(), from, token_id, data)?
                 .0;
 
             if u32::from_be_bytes(received) != ERC721_TOKEN_RECEIVER_ID {
