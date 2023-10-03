@@ -39,4 +39,9 @@ impl Sample {
         self.erc721.mint(msg::sender(), token_id)?;
         Ok(())
     }
+
+    pub fn burn(&mut self, token_id: U256) -> Result<(), Vec<u8>> {
+        self.erc721.burn(token_id)?;
+        Ok(())
+    }
 }

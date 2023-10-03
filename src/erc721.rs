@@ -202,8 +202,24 @@ impl<T: ERC721Params> ERC721<T> {
         Ok(())
     }
 
-    pub fn burn(&mut self, from: Address, token_id: U256) -> Result<()> {
-        self.transfer(token_id, from, Address::default())?;
+    pub fn burn(&mut self, token_id: U256) -> Result<()> {
+        // self.transfer(token_id, from, Address::default())?;
+        let mut owner = self.owners.setter(token_id);
+        if owner.is_zero() {
+            return Err(ERC721Error::InvalidTokenId(InvalidTokenId { token_id }));
+        }
+        let from = owner.get();
+        let to = Address::default();
+
+        let mut owner_balance = self.balance.setter(from);
+        let balance = owner_balance.get() - U256::from(1);
+        owner_balance.set(balance);
+
+        // Set new owner to zero address
+        owner.set(to);
+        self.approved.delete(token_id);
+
+        evm::log(Transfer { from, to, token_id });
         Ok(())
     }
 }

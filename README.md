@@ -6,3 +6,4 @@ Most of the code is based off of the example [here](https://github.com/OffchainL
 - totalSupply was removed from the base implementation
 - supportsInterface returns true for IERC721Metadata
 - tokenUri() has been renamed to tokenUR() to match the ERC721 spec
+- Changed internal burn() function to only require a tokenId
