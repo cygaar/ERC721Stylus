@@ -136,7 +136,7 @@ impl<T: ERC721Params> ERC721<T> {
         let balance = from_balance.get() - U256::from(1);
         from_balance.set(balance);
 
-        let mut to_balance = self.balance.setter(from);
+        let mut to_balance = self.balance.setter(to);
         let balance = to_balance.get() + U256::from(1);
         to_balance.set(balance);
 
