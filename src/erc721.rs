@@ -203,23 +203,35 @@ impl<T: ERC721Params> ERC721<T> {
     }
 
     pub fn burn(&mut self, token_id: U256) -> Result<()> {
-        // self.transfer(token_id, from, Address::default())?;
-        let mut owner = self.owners.setter(token_id);
-        if owner.is_zero() {
+        let mut owner_setter = self.owners.setter(token_id);
+        if owner_setter.is_zero() {
             return Err(ERC721Error::InvalidTokenId(InvalidTokenId { token_id }));
         }
-        let from = owner.get();
-        let to = Address::default();
+        let owner = owner_setter.get();
 
-        let mut owner_balance = self.balance.setter(from);
+        if msg::sender() != owner
+            && !self.approved_for_all.getter(owner).get(msg::sender())
+            && msg::sender() != self.approved.get(token_id)
+        {
+            return Err(ERC721Error::NotApproved(NotApproved {
+                owner,
+                spender: msg::sender(),
+                token_id,
+            }));
+        }
+
+        let mut owner_balance = self.balance.setter(owner);
         let balance = owner_balance.get() - U256::from(1);
         owner_balance.set(balance);
 
-        // Set new owner to zero address
-        owner.set(to);
+        owner_setter.set(Address::default());
         self.approved.delete(token_id);
 
-        evm::log(Transfer { from, to, token_id });
+        evm::log(Transfer {
+            from: owner,
+            to: Address::default(),
+            token_id,
+        });
         Ok(())
     }
 }
@@ -265,7 +277,10 @@ impl<T: ERC721Params> ERC721<T> {
         const IERC721: u32 = 0x80ac58cd;
         const IERC721METADATA: u32 = 0x5b5e139f;
 
-        Ok(matches!(u32::from_be_bytes(interface), IERC165 | IERC721 | IERC721METADATA))
+        Ok(matches!(
+            u32::from_be_bytes(interface),
+            IERC165 | IERC721 | IERC721METADATA
+        ))
     }
 
     /// Gets the number of NFTs owned by an account.
