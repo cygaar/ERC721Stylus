@@ -7,6 +7,8 @@
 //! which allows specifying the name, symbol, and token uri.
 //!
 //! Note that this code is unaudited and not fit for production use.
+//! 
+//! Code is based off the example here: https://github.com/OffchainLabs/stylus-workshop-nft/blob/main/src/erc712.rs
 
 use alloc::{string::String, vec, vec::Vec};
 use alloy_primitives::{Address, U256};
@@ -204,8 +206,8 @@ impl<T: ERC721Params> ERC721<T> {
         token_id: U256,
         data: Vec<u8>,
     ) -> Result<()> {
-        let _ = storage.borrow_mut().mint(to, token_id);
-        let _ = Self::call_receiver(storage, token_id, msg::sender(), to, data);
+        storage.borrow_mut().mint(to, token_id)?;
+        Self::call_receiver(storage, token_id, Address::default(), to, data)?;
         Ok(())
     }
 

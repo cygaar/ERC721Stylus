@@ -40,12 +40,20 @@ impl Sample {
         Ok(())
     }
 
+    pub fn safe_mint(&mut self, token_id: U256) -> Result<(), Vec<u8>> {
+        ERC721::safe_mint(self, msg::sender(), token_id, Vec::new())?;
+        Ok(())
+    }
+
     pub fn mint_loop(&mut self, qty: U256) -> Result<(), Vec<u8>> {
         let supply = self.total_supply.get();
+        let supply: u32 = supply.try_into().unwrap();
+        let qty: u32 = qty.try_into().unwrap();
+    
         for i in 0..qty.try_into().unwrap() {
-            self.erc721.mint(msg::sender(), supply + U256::from(i))?;
+            self.erc721.mint(msg::sender(), U256::from(supply + i))?;
         }
-        self.total_supply.set(supply + qty);
+        self.total_supply.set(U256::from(supply + qty));
         Ok(())
     }
 
