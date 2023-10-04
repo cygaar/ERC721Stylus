@@ -28,15 +28,32 @@ sol_storage! {
     struct Sample {
         #[borrow] // Allows erc721 to access Sample's storage and make calls
         ERC721<SampleParams> erc721;
+        uint256 total_supply;
     }
 }
 
 #[external]
 #[inherit(ERC721<SampleParams>)]
 impl Sample {
-    /// Mints an NFT
     pub fn mint(&mut self, token_id: U256) -> Result<(), Vec<u8>> {
         self.erc721.mint(msg::sender(), token_id)?;
+        Ok(())
+    }
+
+    pub fn safe_mint(&mut self, token_id: U256) -> Result<(), Vec<u8>> {
+        ERC721::safe_mint(self, msg::sender(), token_id, Vec::new())?;
+        Ok(())
+    }
+
+    pub fn mint_loop(&mut self, qty: U256) -> Result<(), Vec<u8>> {
+        let supply = self.total_supply.get();
+        let supply: u32 = supply.try_into().unwrap();
+        let qty: u32 = qty.try_into().unwrap();
+    
+        for i in 0..qty.try_into().unwrap() {
+            self.erc721.mint(msg::sender(), U256::from(supply + i))?;
+        }
+        self.total_supply.set(U256::from(supply + qty));
         Ok(())
     }
 

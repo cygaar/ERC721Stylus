@@ -7,6 +7,8 @@
 //! which allows specifying the name, symbol, and token uri.
 //!
 //! Note that this code is unaudited and not fit for production use.
+//! 
+//! Code is based off the example here: https://github.com/OffchainLabs/stylus-workshop-nft/blob/main/src/erc712.rs
 
 use alloc::{string::String, vec, vec::Vec};
 use alloy_primitives::{Address, U256};
@@ -181,10 +183,20 @@ impl<T: ERC721Params> ERC721<T> {
     }
 
     pub fn mint(&mut self, to: Address, token_id: U256) -> Result<()> {
-        if !self.owners.get(token_id).is_zero() {
+        if to.is_zero() {
+            return Err(ERC721Error::TransferToZero(TransferToZero { token_id }));
+        }
+        let mut owner = self.owners.setter(token_id);
+        if !owner.is_zero() {
             return Err(ERC721Error::AlreadyMinted(AlreadyMinted {}));
         }
-        self.transfer(token_id, Address::default(), to)?;
+        owner.set(to);
+        
+        let mut to_balance = self.balance.setter(to);
+        let balance = to_balance.get() + U256::from(1);
+        to_balance.set(balance);
+
+        evm::log(Transfer { from: Address::default(), to, token_id });
         Ok(())
     }
 
@@ -194,11 +206,8 @@ impl<T: ERC721Params> ERC721<T> {
         token_id: U256,
         data: Vec<u8>,
     ) -> Result<()> {
-        let this = storage.borrow_mut();
-        if !this.owners.get(token_id).is_zero() {
-            return Err(ERC721Error::AlreadyMinted(AlreadyMinted {}));
-        }
-        Self::safe_transfer(storage, token_id, Address::default(), to, data)?;
+        storage.borrow_mut().mint(to, token_id)?;
+        Self::call_receiver(storage, token_id, Address::default(), to, data)?;
         Ok(())
     }
 
