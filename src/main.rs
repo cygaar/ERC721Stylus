@@ -32,17 +32,44 @@ sol_storage! {
     }
 }
 
+// Rust implementation of this SampleNFT Solidity contract:
+
+// pragma solidity ^0.8.21;
+// import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+
+// pragma solidity ^0.8.21;
+
+// import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+
+// contract SampleNFT is ERC721 {
+//     uint256 public totalSupply;
+
+//     constructor() ERC721("Sample NFT", "SAMPLE") {}
+
+//     function mintLoop(uint256 qty) external {
+//         uint256 supply = totalSupply;
+//         for (uint256 i; i < qty; ) {
+//             unchecked {
+//                 _mint(msg.sender, supply++);
+//                 ++i;
+//             }
+//         }
+//         totalSupply = supply;
+//     }
+
+//     function burn(uint256 tokenId) external {
+//         _burn(tokenId);
+//         unchecked {
+//             --totalSupply;
+//         }
+//     }
+// }
+
 #[external]
 #[inherit(ERC721<SampleParams>)]
 impl Sample {
-    pub fn mint(&mut self, token_id: U256) -> Result<(), Vec<u8>> {
-        self.erc721.mint(msg::sender(), token_id)?;
-        Ok(())
-    }
-
-    pub fn safe_mint(&mut self, token_id: U256) -> Result<(), Vec<u8>> {
-        ERC721::safe_mint(self, msg::sender(), token_id, Vec::new())?;
-        Ok(())
+    pub fn total_supply(&self) -> Result<U256, Vec<u8>> {
+        Ok(self.total_supply.get())
     }
 
     pub fn mint_loop(&mut self, qty: U256) -> Result<(), Vec<u8>> {
@@ -59,6 +86,8 @@ impl Sample {
 
     pub fn burn(&mut self, token_id: U256) -> Result<(), Vec<u8>> {
         self.erc721.burn(token_id)?;
+        let supply = self.total_supply.get();
+        self.total_supply.set(supply - U256::from(1));
         Ok(())
     }
 }
