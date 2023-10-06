@@ -7,11 +7,11 @@
 //! which allows specifying the name, symbol, and token uri.
 //!
 //! Note that this code is unaudited and not fit for production use.
-//! 
+//!
 //! Code is based off the example here: https://github.com/OffchainLabs/stylus-workshop-nft/blob/main/src/erc712.rs
 
 use alloc::{string::String, vec, vec::Vec};
-use alloy_primitives::{Address, U256};
+use alloy_primitives::{b256, Address, U256};
 use alloy_sol_types::{sol, SolError};
 use core::{borrow::BorrowMut, marker::PhantomData};
 use stylus_sdk::{abi::Bytes, evm, msg, prelude::*};
@@ -154,7 +154,11 @@ impl<T: ERC721Params> ERC721<T> {
         to: Address,
         data: Vec<u8>,
     ) -> Result<()> {
-        if to.has_code() {
+        // TODO: wait for Stylus SDK to fix the has_code property checker
+        let hash = to.codehash();
+        if !hash.is_zero()
+            || hash == b256!("c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470")
+        {
             let receiver = IERC721TokenReceiver::new(to);
             let received = receiver
                 .on_erc_721_received(storage, msg::sender(), from, token_id, data)?
@@ -191,12 +195,16 @@ impl<T: ERC721Params> ERC721<T> {
             return Err(ERC721Error::AlreadyMinted(AlreadyMinted {}));
         }
         owner.set(to);
-        
+
         let mut to_balance = self.balance.setter(to);
         let balance = to_balance.get() + U256::from(1);
         to_balance.set(balance);
 
-        evm::log(Transfer { from: Address::default(), to, token_id });
+        evm::log(Transfer {
+            from: Address::default(),
+            to,
+            token_id,
+        });
         Ok(())
     }
 
