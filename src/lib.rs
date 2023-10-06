@@ -1,4 +1,4 @@
-#![cfg_attr(not(feature = "export-abi"), no_main,no_std)]
+#![cfg_attr(not(feature = "export-abi"), no_std)]
 extern crate alloc;
 
 mod erc721;
